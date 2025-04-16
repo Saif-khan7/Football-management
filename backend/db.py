@@ -1,9 +1,13 @@
 import sqlite3
 from flask import g
 
-DB_PATH = 'C:/Users/saifs/OneDrive/Desktop/Football-project/Football-management/backend/clubs.db'
+DB_PATH = 'clubs.db'
 
 def get_db():
+    """
+    Opens a new database connection if there is none yet for the
+    current application context.
+    """
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(DB_PATH)
@@ -11,6 +15,10 @@ def get_db():
     return db
 
 def init_db(app):
+    """
+    Creates the clubs table if it doesn't exist.
+    Call this once at app startup.
+    """
     with app.app_context():
         db = get_db()
         db.execute("""
@@ -27,7 +35,16 @@ def init_db(app):
         db.commit()
 
 def query_db(query, args=(), one=False):
+    """
+    Helper to query the database and return rows.
+    """
     cur = get_db().execute(query, args)
     rv = cur.fetchall()
     cur.close()
     return (rv[0] if rv else None) if one else rv
+
+if __name__ == '__main__':
+    # Allows you to run `python db.py` to initialize the database
+    from app import app
+    init_db(app)
+    print("✅ clubs.db created (or already existed).")
