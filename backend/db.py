@@ -17,19 +17,21 @@ def get_db():
 def init_db(app):
     """
     Creates the clubs table if it doesn't exist.
-    Call this once at app startup.
     """
     with app.app_context():
         db = get_db()
         db.execute("""
             CREATE TABLE IF NOT EXISTS clubs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                club_name TEXT NOT NULL,
-                total_budget REAL NOT NULL,
-                player_wages REAL NOT NULL,
-                transfer_spend REAL NOT NULL,
-                revenue REAL NOT NULL,
-                net_profit REAL NOT NULL
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                club_name       TEXT    NOT NULL,
+                total_budget    REAL    NOT NULL,
+                ticket_sales    REAL    NOT NULL,
+                players_sold    REAL    NOT NULL,
+                sponsors        REAL    NOT NULL,
+                stadium_cost    REAL    NOT NULL,
+                players_bought  REAL    NOT NULL,
+                player_wages    REAL    NOT NULL,
+                net_profit      REAL    NOT NULL
             );
         """)
         db.commit()
@@ -44,7 +46,7 @@ def query_db(query, args=(), one=False):
     return (rv[0] if rv else None) if one else rv
 
 if __name__ == '__main__':
-    # Allows you to run `python db.py` to initialize the database
+    # Initialize the DB standalone
     from app import app
     init_db(app)
     print("✅ clubs.db created (or already existed).")

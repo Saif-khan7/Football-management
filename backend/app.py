@@ -9,40 +9,47 @@ init_db(app)
 @app.teardown_appcontext
 def close_connection(exception):
     """
-    Closes the database connection at the end of the request.
+    Close the DB connection after each request.
     """
     db = getattr(g, '_database', None)
     if db is not None:
         db.close()
 
-def calculate_net(revenue, wages, spend):
+def calculate_net(ticket_sales, players_sold, sponsors,
+                  stadium_cost, players_bought, player_wages):
     """
-    Safely convert inputs to floats and compute net profit.
+    Net Profit = (inflows) - (outflows)
     """
-    rev = float(revenue)
-    w  = float(wages)
-    s  = float(spend)
-    return rev - (w + s)
+    return (
+        (ticket_sales + players_sold + sponsors)
+        - (stadium_cost + players_bought + player_wages)
+    )
 
 @app.route('/clubs', methods=['POST'])
 def add_club():
     data = request.json
-    # Parse and convert inputs
-    club_name     = data['club_name']
-    total_budget  = float(data['total_budget'])
-    player_wages  = float(data['player_wages'])
-    transfer_spend= float(data['transfer_spend'])
-    revenue       = float(data['revenue'])
-    net           = calculate_net(revenue, player_wages, transfer_spend)
+    # parse & convert
+    club_name      = data['club_name']
+    total_budget   = float(data['total_budget'])
+    ticket_sales   = float(data['ticket_sales'])
+    players_sold   = float(data['players_sold'])
+    sponsors       = float(data['sponsors'])
+    stadium_cost   = float(data['stadium_cost'])
+    players_bought = float(data['players_bought'])
+    player_wages   = float(data['player_wages'])
+    net = calculate_net(ticket_sales, players_sold, sponsors,
+                        stadium_cost, players_bought, player_wages)
 
     db = get_db()
     db.execute(
         """
-        INSERT INTO clubs 
-          (club_name, total_budget, player_wages, transfer_spend, revenue, net_profit)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO clubs
+          (club_name, total_budget, ticket_sales, players_sold, sponsors,
+           stadium_cost, players_bought, player_wages, net_profit)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (club_name, total_budget, player_wages, transfer_spend, revenue, net)
+        (club_name, total_budget, ticket_sales, players_sold, sponsors,
+         stadium_cost, players_bought, player_wages, net)
     )
     db.commit()
     return jsonify({'message': 'Club added'}), 201
@@ -63,22 +70,28 @@ def get_club(club_id):
 @app.route('/clubs/<int:club_id>', methods=['PUT'])
 def update_club(club_id):
     data = request.json
-    # Parse and convert inputs
-    club_name     = data['club_name']
-    total_budget  = float(data['total_budget'])
-    player_wages  = float(data['player_wages'])
-    transfer_spend= float(data['transfer_spend'])
-    revenue       = float(data['revenue'])
-    net           = calculate_net(revenue, player_wages, transfer_spend)
+    # parse & convert
+    club_name      = data['club_name']
+    total_budget   = float(data['total_budget'])
+    ticket_sales   = float(data['ticket_sales'])
+    players_sold   = float(data['players_sold'])
+    sponsors       = float(data['sponsors'])
+    stadium_cost   = float(data['stadium_cost'])
+    players_bought = float(data['players_bought'])
+    player_wages   = float(data['player_wages'])
+    net = calculate_net(ticket_sales, players_sold, sponsors,
+                        stadium_cost, players_bought, player_wages)
 
     db = get_db()
     db.execute(
         """
-        UPDATE clubs
-        SET club_name=?, total_budget=?, player_wages=?, transfer_spend=?, revenue=?, net_profit=?
+        UPDATE clubs SET
+          club_name=?, total_budget=?, ticket_sales=?, players_sold=?, sponsors=?,
+          stadium_cost=?, players_bought=?, player_wages=?, net_profit=?
         WHERE id=?
         """,
-        (club_name, total_budget, player_wages, transfer_spend, revenue, net, club_id)
+        (club_name, total_budget, ticket_sales, players_sold, sponsors,
+         stadium_cost, players_bought, player_wages, net, club_id)
     )
     db.commit()
     return jsonify({'message': 'Club updated'})
@@ -91,5 +104,4 @@ def delete_club(club_id):
     return jsonify({'message': 'Club deleted'})
 
 if __name__ == '__main__':
-    # Starts the Flask dev server on http://localhost:5000
     app.run(debug=True)
